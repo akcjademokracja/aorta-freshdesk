@@ -5,29 +5,32 @@ var cron = require('node-cron');
 var fd = require('./fd.js');
 var civicrm = require('./civicrm.js');
 
-
-class AnnotateTickets {
+class ProcessTickets {
   constructor(start_date) {
-    if (typeof start_date == 'string') {
-      this.start_date = new Date(start_date);
-    } else {
-      this.start_date = start_date;
-    }
+    this.start_date = start_date;
   }
 
-  annotateLastTickets() {
-    fd.fetchLastTickets(this.start_date).then((tickets) => {
+  processLastTickets() {
+    return fd.fetchLastTickets(this.start_date).then((tickets) => {
       this.tickets = tickets;
-      return this.annotateOneTicket();
+      return this.next();
     });
   }
 
-  annotateOneTicket() {
+  next() {
     const t = this.tickets.pop(0);
     if (t == null) {
-      return;
+      return null;
     }
+    return this.processOneTicket(t);
+  }
 
+  
+}
+
+
+class AnnotateTickets extends ProcessTickets {
+  processOneTicket() {
     console.log(`will annotate ticket #${t.id}`);
 
     fd.getWholeTicket(t)
@@ -37,13 +40,13 @@ class AnnotateTickets {
             if (tags.length == 0) {
               // should be easier to use exception here?
               console.log(`no tags found for ticket ${t.id}`);
-              return this.annotateOneTicket();
+              return this.next();
             }
 
             return fd.tagTicket(t, tags)
               .then((whatever) => {
                 console.log(`success tagging ticket ${t.id}`);
-                return this.annotateOneTicket();
+                return this.next();
               });
 
           });
@@ -51,7 +54,7 @@ class AnnotateTickets {
       .catch((error) => {
         console.log(`Failed to annotate  ${error}, ignore this ticket`);
         console.log(new Error().stack);
-        return this.annotateOneTicket();
+        return this.next();
       });
   }
 
@@ -76,11 +79,11 @@ class AnnotateTickets {
         }
         let tags = [];
 
-        // tag by author
-        const author = /^(\S+) +(\S+)/iu.exec(md.from_name);
-        if (author) {
-          tags.push(`od ${author[1]} ${author[2]}`);
-        }
+        // tag by author - disabled on request
+        // const author = /^(\S+) +(\S+)/iu.exec(md.from_name);
+        // if (author) {
+        //   tags.push(`od ${author[1]} ${author[2]}`);
+        // }
 
         // tag by campaign
         const camps = md['api.Campaign.get'];
@@ -98,7 +101,7 @@ class AnnotateTickets {
   }
 }
 
-var moment = new Date("2017.03.24");
+var moment = new Date("2017.03.26");
 
 if (process.argv[2] == '-a')  {
 
