@@ -40,6 +40,7 @@ function api(entity, action, params) {
     };
     if (action === 'get') {
       let url = process.env['CIVICRM_ENDPOINT'];
+      console.log(`url: ${url}`);
       return request.get(url, opts, handle_response);
     } else {
       return request.post(url, opts, handle_response);

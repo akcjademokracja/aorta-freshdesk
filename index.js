@@ -6,8 +6,9 @@ var fd = require('./fd.js');
 var civicrm = require('./civicrm.js');
 
 class ProcessTickets {
-  constructor(start_date) {
+  constructor(start_date, handlers) {
     this.start_date = start_date;
+    this.handlers = handlers;
   }
 
   processLastTickets() {
@@ -22,40 +23,39 @@ class ProcessTickets {
     if (t == null) {
       return null;
     }
-    return this.processOneTicket(t);
+
+    let proc = fd.getWholeTicket(t)
+          .then((t) => {
+            return Promise.all(
+              this.handlers.map((h) => {
+                return h(t);
+              }));
+          }).then((results) => {
+            let newTags = [];
+            for (let r of results) {
+              console.log(`result tags: ${newTags} <- ${r.tags}`);
+              if (r.tags) {
+                newTags = newTags.concat(r.tags);
+              }
+            }
+            return fd.tagTicket(t, newTags);
+          })
+          .catch((e) => {
+            console.log(`problem processing: ${e}`);
+            console.log(new Error().stack);
+            this.next();
+          });
+
+    return proc;
   }
 
-  
 }
 
 
-class AnnotateTickets extends ProcessTickets {
-  processOneTicket() {
-    console.log(`will annotate ticket #${t.id}`);
-
-    fd.getWholeTicket(t)
-      .then((t) => {
-        this.getTicketTags(t)
-          .then((tags) => {
-            if (tags.length == 0) {
-              // should be easier to use exception here?
-              console.log(`no tags found for ticket ${t.id}`);
-              return this.next();
-            }
-
-            return fd.tagTicket(t, tags)
-              .then((whatever) => {
-                console.log(`success tagging ticket ${t.id}`);
-                return this.next();
-              });
-
-          });
-      })
-      .catch((error) => {
-        console.log(`Failed to annotate  ${error}, ignore this ticket`);
-        console.log(new Error().stack);
-        return this.next();
-      });
+class AnnotateTickets  {
+  process(ticket) {
+    return this.getTicketTags(ticket)
+      .then((t) => { return {tags: t}; });
   }
 
   getTicketTags(ticket) {
@@ -72,8 +72,10 @@ class AnnotateTickets extends ProcessTickets {
         "api.Campaign.get": {"return":["id","title"]}
       });
 
+      console.log("Will call civi");
       return fm.then((results) => {
         const md = results[0];
+        console.log("mailing :" + md);
         if (md == null) {
           return [];
         }
@@ -110,12 +112,18 @@ if (process.argv[2] == '-a')  {
                      const start = moment;
                      moment = new Date();
                      console.log(`Annotate tickets changed since ${start}`);
-                     let annotator = new AnnotateTickets(start);
-                     annotator.annotateLastTickets();
+                     let annotator = new AnnotateTickets();
+                     let processor = new ProcessTickets(start, [
+                       (t)=>annotator.process(t)
+                     ]);
+                     processor.processLastTickets();
                    },
                 true);
 
 } else {
-  let annotator = new AnnotateTickets(moment);
-  annotator.annotateLastTickets();
+  let annotator = new AnnotateTickets();
+  let processor = new ProcessTickets(moment, [
+    (t)=>annotator.process(t)
+  ]);
+  processor.processLastTickets();
 }
