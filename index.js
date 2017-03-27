@@ -25,24 +25,23 @@ class ProcessTickets {
     }
 
     let proc = fd.getWholeTicket(t)
-          .then((t) => {
+          .then((wt) => {
             return Promise.all(
               this.handlers.map((h) => {
-                return h(t);
-              }));
-          }).then((results) => {
-            let newTags = [];
-            for (let r of results) {
-              console.log(`result tags: ${newTags} <- ${r.tags}`);
-              if (r.tags) {
-                newTags = newTags.concat(r.tags);
-              }
-            }
-            return fd.tagTicket(t, newTags);
+                return h(wt);
+              }))
+              .then((results) => {
+                results.forEach((x)=>console.log(`> ${JSON.stringify(x)}`));
+                const newTags = results.reduce((acc, r) => {
+                  return acc.concat(r.tags);
+                }, []);
+                return fd.tagTicket(wt, newTags);
+              });
           })
+          .then((whatever)=>this.next())
           .catch((e) => {
             console.log(`problem processing: ${e}`);
-            console.log(new Error().stack);
+            console.log(e.stack);
             this.next();
           });
 
