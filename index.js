@@ -50,6 +50,16 @@ class ProcessTickets {
 
 }
 
+class OptoutTickets {
+  process(ticket) {
+    return this.optout(ticket)
+      .then((dooptout) => {
+        return civicrm.api('Contact', 'get', {
+          email: ticket
+        });
+      });
+  }
+}
 
 class AnnotateTickets  {
   process(ticket) {
@@ -104,6 +114,7 @@ class AnnotateTickets  {
 
 var moment = new Date("2017.03.26");
 
+
 if (process.argv[2] == '-a')  {
 
   cron.schedule("*/5 * * * *", () =>
@@ -120,9 +131,14 @@ if (process.argv[2] == '-a')  {
                 true);
 
 } else {
-  let annotator = new AnnotateTickets();
-  let processor = new ProcessTickets(moment, [
-    (t)=>annotator.process(t)
-  ]);
-  processor.processLastTickets();
+  // let annotator = new AnnotateTickets();
+  // let processor = new ProcessTickets(moment, [
+  //   (t)=>annotator.process(t)
+  // ]);
+  // processor.processLastTickets();
 }
+
+    
+module.exports  = {
+  fd: fd
+} 
