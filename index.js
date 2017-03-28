@@ -52,11 +52,9 @@ class ProcessTickets {
 
 class OptoutTickets {
   process(ticket) {
-    console.log(`TICKET? ${JSON.stringify(ticket.tags)}`);
     if (ticket.tags.indexOf("wypisanie") > -1 &&
         ticket.tags.indexOf("wypisano") == -1) {
 
-      console.log("Civi:Api:optout");
       return civicrm.api('Contact', 'get', {
         email: ticket.requester.email,
         "api.Contact.setvalue": {
@@ -64,7 +62,6 @@ class OptoutTickets {
           value: 1
         }})
         .then((civiok) =>{
-          console.log(`Civi:Api:optout=${JSON.stringify(civiok)}`);
           return {tags: ["wypisano"]};
         } );
     } else {
@@ -160,6 +157,15 @@ module.exports = {
     //   (t)=>annotator.process(t)
     // ]);
     // processor.processLastTickets();
+  },
+  test2: function() {
+    let annotator = new AnnotateTickets();
+    let optouter = new OptoutTickets();
+    let processor = new ProcessTickets(new Date('2017.03.27'), [
+      (t)=>annotator.process(t),
+      (t)=>optouter.process(t)
+    ]);
+    processor.processLastTickets();
   }
 
 

@@ -2,7 +2,7 @@
 const HTTP = require('http');
 const request = require('request');
 
-const debug_enabled = true;
+const debug_enabled = false;
 
 function debug() {
   if (debug_enabled) {
