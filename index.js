@@ -31,7 +31,7 @@ class ProcessTickets {
                 return h(wt);
               }))
               .then((results) => {
-                results.forEach((x)=>console.log(`> ${JSON.stringify(x)}`));
+                results.forEach((x)=>console.log(`ticket ${wt.id}> ${JSON.stringify(x)}`));
                 const newTags = results.reduce((acc, r) => {
                   return acc.concat(r.tags);
                 }, []);
@@ -62,6 +62,7 @@ class OptoutTickets {
           value: 1
         }})
         .then((civiok) =>{
+          console.log(`Opt Out from Civi: ${ticket.requester.email}`);
           return {tags: ["wypisano"]};
         } );
     } else {
@@ -91,7 +92,6 @@ class AnnotateTickets  {
         "api.Campaign.get": {"return":["id","title"]}
       });
 
-      console.log("Will call civi");
       return fm.then((results) => {
         const md = results[0];
         console.log("mailing :" + md);
