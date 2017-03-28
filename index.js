@@ -34,7 +34,7 @@ class ProcessTickets {
                 results.forEach((x)=>console.log(`ticket ${wt.id}> ${JSON.stringify(x)}`));
                 const newTags = results.reduce((acc, r) => {
                   return acc.concat(r.tags);
-                }, []);
+                }, []).filter((x) => x!=undefined);
                 return fd.tagTicket(wt, newTags);
               });
           })
