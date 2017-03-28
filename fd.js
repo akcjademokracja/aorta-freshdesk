@@ -20,11 +20,22 @@ function fetchLastTickets(since) {
   return p;
 };
 
-function getWholeTicket(ticket) {
+function getWholeTicket(ticket, include_requester) {
   return new Promise((ok, error) => {
-    return freshdesk.getTicket(ticket.id, (failure, data, extra) => {
+    return freshdesk.getTicket(ticket.id, (failure, wholeticket, extra) => {
       if (failure == null) {
-        return ok(data);
+        if (include_requester) {
+          freshdesk.getContact(wholeticket.requester_id, (failure2, contact, extra) => {
+            console.log(`FD.getContact(${wholeticket.requester_id}=>error=${failure2})`);
+            if (failure2) {
+              return error(failure2);
+            }
+            wholeticket.requester = contact;
+            return ok(wholeticket);
+          });
+        } else {
+          return ok(wholeticket);
+        }
       } else {
         return error(failure);
       }

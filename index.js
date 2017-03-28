@@ -24,7 +24,7 @@ class ProcessTickets {
       return null;
     }
 
-    let proc = fd.getWholeTicket(t)
+    let proc = fd.getWholeTicket(t, true)
           .then((wt) => {
             return Promise.all(
               this.handlers.map((h) => {
@@ -52,12 +52,25 @@ class ProcessTickets {
 
 class OptoutTickets {
   process(ticket) {
-    return this.optout(ticket)
-      .then((dooptout) => {
-        return civicrm.api('Contact', 'get', {
-          email: ticket
-        });
-      });
+    console.log(`TICKET? ${JSON.stringify(ticket.tags)}`);
+    if (ticket.tags.indexOf("wypisanie") > -1 &&
+        ticket.tags.indexOf("wypisano") == -1) {
+
+      console.log("Civi:Api:optout");
+      return civicrm.api('Contact', 'get', {
+        email: ticket.requester.email,
+        "api.Contact.setvalue": {
+          field: "is_opt_out",
+          value: 1
+        }})
+        .then((civiok) =>{
+          console.log(`Civi:Api:optout=${JSON.stringify(civiok)}`);
+          return {tags: ["wypisano"]};
+        } );
+    } else {
+      return {};
+    }
+
   }
 }
 
@@ -123,22 +136,31 @@ if (process.argv[2] == '-a')  {
                      moment = new Date();
                      console.log(`Annotate tickets changed since ${start}`);
                      let annotator = new AnnotateTickets();
+                     let optouter = new OptoutTickets();
                      let processor = new ProcessTickets(start, [
-                       (t)=>annotator.process(t)
+                       (t)=>annotator.process(t),
+                       (t)=>optouter.process(t)
                      ]);
                      processor.processLastTickets();
                    },
                 true);
 
-} else {
-  // let annotator = new AnnotateTickets();
-  // let processor = new ProcessTickets(moment, [
-  //   (t)=>annotator.process(t)
-  // ]);
-  // processor.processLastTickets();
 }
 
-    
-module.exports  = {
-  fd: fd
-} 
+module.exports = {
+  test: function() {
+    let optouter = new OptoutTickets();
+    fd.getWholeTicket({id: 8467 }, true)
+      .then((ticket) => {
+        return optouter.process(ticket);
+      });
+
+    // let annotator = new AnnotateTickets();
+    // let processor = new ProcessTickets(moment, [
+    //   (t)=>annotator.process(t)
+    // ]);
+    // processor.processLastTickets();
+  }
+
+
+}
