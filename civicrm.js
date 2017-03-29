@@ -10,15 +10,27 @@ function debug() {
   }
 }
 
+module.exports = {
+  site_key: null,
+  api_key: null,
+  endpoint: null,
+};
+
+
 function api(entity, action, params) {
+  if (module.exports.api_key == null || module.exports.site_key == null) {
+    throw new Error("Please set CiviCRM api keys");
+  }
+  if (module.exports.endpoint == null) {
+    throw new Error("Please set CiviCRM endpoint");
+  }
   return new Promise(function(ok, fail) {
     let handle_response, opts;
     params.sequential = 1;
-    console.log("CAPIKEYS", process.env['CIVICRM_SITE_KEY']);
     opts = {
       qs: {
-        key: process.env['CIVICRM_SITE_KEY'],
-        api_key: process.env['CIVICRM_API_KEY'],
+        key: module.exports.site_key,
+        api_key: module.exports.api_key,
         entity: entity,
         action: action,
         json: JSON.stringify(params)
@@ -40,7 +52,7 @@ function api(entity, action, params) {
       }
     };
     if (action === 'get') {
-      let url = process.env['CIVICRM_ENDPOINT'];
+      let url = module.exports.endpoint;
       console.log(`url: ${url}`);
       return request.get(url, opts, handle_response);
     } else {
@@ -50,7 +62,4 @@ function api(entity, action, params) {
 };
 
 
-
-module.exports = {
-  api: api,
-};
+module.exports.api = api;

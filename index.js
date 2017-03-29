@@ -5,6 +5,10 @@ var cron = require('node-cron');
 var fd = require('./fd.js');
 var civicrm = require('./civicrm.js');
 
+civicrm.site_key = process.env['CIVICRM_SITE_KEY'];
+civicrm.api_key =  process.env['CIVICRM_API_KEY'];
+civicrm.endpoint = process.env['CIVICRM_ENDPOINT'];
+
 class ProcessTickets {
   constructor(start_date, handlers) {
     this.start_date = start_date;
@@ -52,7 +56,8 @@ class ProcessTickets {
 
 class OptoutTickets {
   process(ticket) {
-    if (ticket.tags.indexOf("wypisanie") > -1 &&
+    console.log(`ticket type = ${ticket.type}`);
+    if (ticket.type == "Wypisanie" &&
         ticket.tags.indexOf("wypisano") == -1) {
 
       return civicrm.api('Contact', 'get', {
@@ -167,6 +172,4 @@ module.exports = {
     ]);
     processor.processLastTickets();
   }
-
-
 }
